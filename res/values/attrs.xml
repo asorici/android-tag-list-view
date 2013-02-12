@@ -1,7 +1,7 @@
 <resources>
     <declare-styleable name="TagView">
-        <attr name="background" format="reference|color" />
-        <attr name="border" format="reference|color" />
+        <attr name="tag_background" format="reference|color" />
+        <attr name="tag_border" format="reference|color" />
     </declare-styleable>
     <declare-styleable name="TagListView">
     	<attr name="vertical_spacing" format="dimension" />

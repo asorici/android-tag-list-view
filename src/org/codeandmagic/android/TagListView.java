@@ -1,6 +1,7 @@
 package org.codeandmagic.android;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -13,14 +14,15 @@ import android.view.ViewGroup.OnHierarchyChangeListener;
 /**
  * Based on PredicateLayout by Henrik Gustafsson
  * 
- * @see http
- *      ://stackoverflow.com/questions/549451/line-breaking-widget-layout-for
- *      -android
+ * @see http://stackoverflow.com/questions/549451/line-breaking-widget-layout-for-android
  * @license http://creativecommons.org/licenses/by-sa/2.5/
+ * 
+ * Updated by Aurélien Guillard
+ * Each line can have a different height
  */
 public class TagListView extends ViewGroup implements OnHierarchyChangeListener {
 
-	private int mLineHeight;
+	
 	private final int mHorizontalSpacing;
 	private final int mVerticalSpacing;
 	private final ArrayList<TagListener> mListeners;
@@ -86,7 +88,17 @@ public class TagListView extends ViewGroup implements OnHierarchyChangeListener 
 		mTags.add(tag);
 		inflateTagView(tag);
 	}
-
+	
+	public void setTags(List<String> tags) {
+		mTags.clear();
+		mTags.addAll(tags);
+		
+		int len = mTags.size();
+		for (int i = 0; i < len; i++) {
+			inflateTagView(mTags.get(i));
+		}
+	}
+	
 	private void inflateTagView(String tag) {
 		TagView tagView = (TagView) mInflater.inflate(R.layout.tag, null);
 		tagView.setText(tag);
@@ -97,82 +109,105 @@ public class TagListView extends ViewGroup implements OnHierarchyChangeListener 
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		assert (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.UNSPECIFIED);
 
-		final int width = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();
-		int height = MeasureSpec.getSize(heightMeasureSpec) - getPaddingTop() - getPaddingBottom();
-		final int count = getChildCount();
-		int lineHeight = 0;
+        final int width = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();
 
-		int xpos = getPaddingLeft();
-		int ypos = getPaddingTop();
+        int height = MeasureSpec.getSize(heightMeasureSpec) - getPaddingTop() - getPaddingBottom();
+        final int count = getChildCount();
+        int line_height = 0;
 
-		for (int i = 0; i < count; i++) {
-			final View child = getChildAt(i);
-			if (child.getVisibility() != GONE) {
-				final LayoutParams lp = (LayoutParams) child.getLayoutParams();
-				child.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
-						MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST));
+        int xpos = getPaddingLeft();
+        int ypos = getPaddingTop();
 
-				final int childWidth = child.getMeasuredWidth();
-				lineHeight = Math.max(lineHeight, child.getMeasuredHeight() + lp.mVerticalSpacing);
+        int childHeightMeasureSpec;
 
-				if (xpos + childWidth > width) {
-					xpos = getPaddingLeft();
-					ypos += lineHeight;
-				}
+        if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST) {
+            childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST);
 
-				xpos += childWidth + lp.mHorizontalSpacing;
-			}
-		}
-		this.mLineHeight = lineHeight;
+        } else if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY) {
+            childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
 
-		if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) {
-			height = ypos + lineHeight;
+        } else {
+            childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        }
 
-		}
-		else if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST) {
-			if (ypos + lineHeight < height) {
-				height = ypos + lineHeight;
-			}
-		}
-		setMeasuredDimension(width, height);
+        for (int i = 0; i < count; i++) {
+            final View child = getChildAt(i);
+            if (child.getVisibility() != GONE) {
+                final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+                child.measure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST), childHeightMeasureSpec);
+                final int childw = child.getMeasuredWidth();
+
+                if (xpos + childw > width) {
+                    xpos = getPaddingLeft();
+                    ypos += line_height;
+                }
+
+                xpos += childw + lp.mHorizontalSpacing;
+                line_height = child.getMeasuredHeight() + lp.mVerticalSpacing;
+            }
+        }
+
+        if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) {
+            height = ypos + line_height;
+
+        } else if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.AT_MOST) {
+            if (ypos + line_height < height) {
+                height = ypos + line_height;
+            }
+        }
+        setMeasuredDimension(width, height);
 	}
-
+	
+	
 	@Override
 	protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
 		return new LayoutParams(mHorizontalSpacing, mVerticalSpacing);
 	}
-
+	
+	
+	/*
+	@Override
+    protected ViewGroup.LayoutParams generateDefaultLayoutParams() {
+        return new LayoutParams(1, 1); // default of 1px spacing
+    }
+	*/
+	
 	@Override
 	protected boolean checkLayoutParams(ViewGroup.LayoutParams p) {
 		if (p instanceof LayoutParams) return true;
 		return false;
 	}
 
+	
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 		final int count = getChildCount();
 		final int width = r - l;
 		int xpos = getPaddingLeft();
 		int ypos = getPaddingTop();
+		int lineHeight = 0;
 
 		for (int i = 0; i < count; i++) {
 			final View child = getChildAt(i);
 			if (child.getVisibility() != GONE) {
-				final int childWidth = child.getMeasuredWidth();
-				final int childHeight = child.getMeasuredHeight();
+				final int childw = child.getMeasuredWidth();
+				final int childh = child.getMeasuredHeight();
 				final LayoutParams lp = (LayoutParams) child.getLayoutParams();
-				if (xpos + childWidth > width) {
+
+				if (xpos + childw > width) {
 					xpos = getPaddingLeft();
-					ypos += mLineHeight;
+					ypos += lineHeight;
 				}
-				child.layout(xpos, ypos, xpos + childWidth, ypos + childHeight);
-				xpos += childWidth + lp.mHorizontalSpacing;
+
+				lineHeight = child.getMeasuredHeight() + lp.mVerticalSpacing;
+
+				child.layout(xpos, ypos, xpos + childw, ypos + childh);
+				xpos += childw + lp.mHorizontalSpacing;
 			}
 		}
 	}
-
-
-
+	
+	
 	@Override
 	public void onChildViewAdded(View parent, View child) {
 		if (child instanceof TagView) {

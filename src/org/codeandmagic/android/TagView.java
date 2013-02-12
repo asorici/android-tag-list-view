@@ -38,8 +38,8 @@ public class TagView extends EditText implements OnClickListener, AnimationListe
         super(context, attrs, defStyle);
 
 		final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.TagView);
-		mTagBackground = parseColor(context, a, R.styleable.TagView_background, R.color.tagBackgroundDefault);
-		mTagBorder = parseColor(context, a, R.styleable.TagView_border, R.color.tagBorderDefault);
+		mTagBackground = parseColor(context, a, R.styleable.TagView_tag_background, R.color.tagBackgroundDefault);
+		mTagBorder = parseColor(context, a, R.styleable.TagView_tag_border, R.color.tagBorderDefault);
 		a.recycle();
 
 		mBackgroundPaint = backgroundPaint();
